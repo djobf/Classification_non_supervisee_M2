@@ -1,0 +1,353 @@
+---
+title: "DM1 Modèles à structure latente"
+author: "Rajeeth Arumainathan, Jules Aubry, Youssef Ben Fadhel"
+date: "2023-11-24"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Données et ACP
+## Analyse exploratiore
+
+On considère un processus de Poisson $(N_t)_{t⩾0}$ d’intensité $λ > 0$. Par ailleurs, T > 0 désigne un réel positif et n ≥ 0 un entier positif.
+
+**1) Pour simuler les instants de saut du processus $(N_t)_{t⩾0}$, voici deux algorithmes** :
+
+- Le premier simulera les *n* premiers instants de saut du processus:
+
+Ici, nous allons utiliser le fait que les instants de saut $T_n$, du processus $(N_t)_{t⩾0}$, correspondent à : $T_n = \sum_{i=1}^n X_i$, avec $X_i$ les temps d'attente qui sont iid et qui suivent une loi exponentielle de paramètre $λ > 0$, de manière à obtenir des instants de saut croissants. Nous allons donc crée un vecteur qui contient les n premiers instants de saut $(T_1,T_2,...,T_n)$
+
+
+- Le second simulera tous les instants de saut sur l’intervalle [0, T]:
+
+Ici, le nombre d'instants de saut *n* étant inconnu, nous allons utiliser le fait que conditionnellement à l'évènement {$N_t = n$}, l'ensemble (non-ordonné) des instants de saut a la même loi qu'un échantillon iid de lois uniformes sur l’intervalle [0, T]. On génère donc $N_t = n$ comme tiré d'une distribution $\text{Poisson}(\lambda T)$ puis indépendamment $T_i\overset{d}{=}\mathcal{U}[0,T], \: i=1,\ldots,n$
+
+
+**2) Complexité des algorithmes** 
+
+Pour le premier algorithme, la complexité est en $O(n)$, en effet, on effectue une boucle sur n afin de créer le vecteur contenant les instants de sauts. Le second algorithme a une compléxité moyenne en $O(\lambda T)$, car on fait également une boucle de taille $N_T=n$ ($N_T$ a comme espérance $\lambda T$). Puisque ces algorithmes consistent à créer des vecteurs et ne nécessitent pas d'autres opérations dans la boucle, on peut dire qu'ils peuvent etre écrits sous forme de vecteur.
+Le deuxième algorithme peut être réecrit comme:
+```{r Algo 2_vect, eval=FALSE}
+IST1 = function(t, intensity){
+  n = rpois(1,t*intensity) #on trouve la valeur de n
+  return (sort(runif(n, 0, t), decreasing = FALSE))
+}
+```
+
+**3) Algorithmes**
+
+- Premier algorithme qui permet de simuler les *n* premiers instants de sauts.
+
+```{r Algo 1}
+n_sauts = function(n, intensity){
+  v = numeric(n) # création d'un vecteur vide
+  v[1] = rexp(1,intensity) # simulation du premier instant de saut T1 = X1 suit la loi exponentielle de paramètre lambda
+  for (i in 1:(n-1)) # boucle pour créer le vecteur des n premiers instants de sauts
+    v[i+1] = v[i] + rexp(1,intensity)
+  return(v)
+}
+```
+
+- Second algorithme qui simule tous les instants de sauts de l'intervalle [0,T].
+
+```{r Algo 2}
+IST = function(t, intensity){
+  n = rpois(1,t*intensity) #on trouve la valeur de n
+  v = numeric(n) 
+  for (i in 1:n) #ordre de n
+    v[i] = runif(1, 0, t) #loi des T_i|N_t
+  
+  return (sort(v, decreasing = FALSE))
+}
+
+processus = IST(10,1)
+
+```
+
+**4) Visualisation**
+
+```{r fonction}
+plotpoisson = function(t, intensity){
+  x = IST(t, intensity)
+  n = length(x) 
+  y = numeric(n)
+  plot(x,y, type = 'p', xlim = c(0,10))
+  abline(h=0, col="grey")
+}
+
+plotpoisson(10,2)
+```
+
+## Inférence pour le processus de Poisson
+
+On considère que $N_T = n > 0$ instants de saut ont été observés sur l’intervalle [0, T].
+
+**5) Estimateur de λ**
+ 
+Comme $(N_T)$ suit une loi de poisson de paramètre $λT > 0$, nous avons $E(N_T) = λT$. Ainsi, nous pouvons prendre comme estimateur de $λ$, $\hat{λ} = N_T/T$. De plus, on a $E(\hat{λ}) = λ$ et $Var(\hat{λ}) = λ/T$. 
+Puisque $N_t$ est un processus de renouvellement vérifiant dont les temps d'attente sont de variance finie égale à $\lambda^{-2}$, le théorème central limite nous assure que notre estimateur est asymptotiquement normal pour $t\rightarrow \infty$.
+En effet, en appliquant ce théorème, on obtient:
+$$\frac{\frac{N_t}{t}-\lambda}{\sqrt{\lambda/t}}\xrightarrow{d}\mathcal{N}(0,1).$$
+$\lambda$ étant inconnu, on le remplace par son estimateur $\hat{\lambda}$ pour obtenir le pivot suivant qui est normal pour $T$ grand: $Z = \frac {\hat{\lambda}-\lambda}{\sqrt{\hat{\lambda}/T}}$
+On a donc que $$\mathbb{P}\left\{\Phi_{\alpha/2}<\frac {\hat{\lambda}-\lambda}{\sqrt{\hat{\lambda}/T}}\leq-\Phi_{\alpha/2} \right\}=1-\alpha$$ où $\Phi_{\alpha/2}$ est le $\alpha/2$ quantile d'une $\mathcal{N}(0,1)$.
+On a donc $$\forall \alpha \in [0,1],\: I_{\alpha}=\left[\hat{\lambda}+\Phi_{\alpha/2}\cdot\sqrt{\hat{\lambda}/T}, \hat{\lambda}-\Phi_{\alpha/2}\cdot\sqrt{\hat{\lambda}/T}\right]$$
+ 
+ 
+ 
+**6) Algorithme pour l'intervalle de confiance asymptotique au niveau 1 − α sur λ.**
+
+```{r IC, echo = TRUE}
+IC <- function(processus, T, alpha){
+  EMV = length(processus)/processus[length(processus)]
+  return(c(EMV+qnorm(alpha/2)*sqrt(EMV/T),
+           EMV-qnorm(alpha/2)*sqrt(EMV/T)) )
+}
+#Intervalles de confiances asymptotiques pour T = 5, 10, 20, 50 au niveau 0.95
+for(T in c(5, 10, 20, 50)) { 
+  proc = IST(T, 1)
+  print(IC(proc, T, 0.05))
+}
+```
+ 
+**7)Simulation numérique et vérification de l'intervalle**
+
+```{r intervalle, echo = TRUE}
+simule <- function(t, intensity, nb){ 
+  #renvoie la proportion de processus simulés dont l'intervalle
+  #de confiance contient bien lambda
+  Y = rep(0, times = nb)
+  for(i in 1:nb) {
+    proc = IST(t, intensity)
+    Y[i] = IC(proc, t, 0.05)[1] < intensity &&
+      IC(proc, t, 0.05)[2] > intensity #teste lambda dans IC
+    }
+  return (sum(Y)/nb) #proportion de processus où lambda est dans IC
+}
+
+
+```
+Le but de cettre procédure est de vérifier qu'asymptotiquement, lorsque $T$ tend vers l'infini, la proportion d'intervalles de confiance qui contiennent bien notre paramètre à estimer tend vers le niveau du test, comme attendu, qui est $1-\alpha$.
+Voici les résultats pour T = 5, 10, 20, 50:
+```{r test_IC, results=TRUE}
+for(T in c(5,10,20,50)) {
+  print(simule(T, 1, 1000))
+}
+
+```
+**8) Test d'adéquation**
+
+Pour un processus de Poisson d'intensité λ, nous avons que les temps d'attente sont indépendants et suivent une loi exponentielle de paramètre λ. Nous allons donc regarder si l'écart entre chaque instant de saut, c'est à dire les temps d'attente suivent bien une loi exp(λ). Pour cela, nous allons effectuer un test de Kolmogov-Smirnov comme suit:
+$H_0$ : "La fonction de distribution des $X_i$ est celle d'une $\mathcal{E}(\lambda)$" contre
+$H_1$ : "La fonction de distribution de  des $X_i$ n'est pas celle d'une $\mathcal{E}(\lambda)$"
+Lorsque l'on est face à un processus dont on ne sait pas s'il est de Poisson, on estimera d'abord $\lambda$ comme à la section précédente.
+```{r test}
+
+intensity = 1
+X = diff(IST(10,intensity)) #on simule des temps d'attente d'un Processus de Poisson(1)
+ks.test(X,'pexp', intensity)$p.value
+
+```
+
+On peut voir que la p-value > 0.05, donc on ne rejette pas $H_0$ et on peut donc supposer que les temps d'attentes suivent une loi exponentielle de parametre $\lambda$.
+Sous l'hypothèse que le processus est de Poisson, les temps d'attente forment un échantillon i.i.d de variables de loi $\mathcal{E}(\lambda)$. Nous pouvons donc comparer les quantiles théoriques d'une $\mathcal{E}(\lambda)$ aux quantiles empiriques construits sur nos $X_1,\ldots,X_n$, ce que l'on fait dans la section suivante.
+
+**9) QQ plot**
+
+Voici le QQ-plot d'un processus de Poisson simulé sur [0,20] (d'intensité 1), les temps d'attente ont bien l'air i.i.d $\mathcal{E}(1)$.
+```{r qqplot, echo=FALSE}
+library(qqconf)
+lambda = 1
+X = diff(IST(t = 20, lambda)) #les temps d'attentes : différences successives des instants de sauts
+qq_conf_plot(X, distribution = qexp, dparams = list(lambda))
+```
+
+**9) Diagnostic de deux processus**
+
+```{r diagnostic}
+proc1 = c(0.06, 0.06, 0.14, 0.56, 0.72, 0.82, 3.14, 3.62, 3.81, 4, 5.43, 7.3, 7.97, 8.95, 10.74, 11.58, 11.59, 11.93, 12.16, 12.35, 12.51, 12.83, 13.29, 13.59, 18.53)
+lambda1 = length(proc1)/20
+X1 = diff(proc1)
+ks.test(X1,'pexp', lambda1)$p.value
+qq_conf_plot(X1, distribution = qexp, dparams = list(lambda1))
+
+```
+
+On peut raisonnablement modéliser ce processus par un processus de Poisson d'intensité $25/20=1.25$ car la p-value du test de Kolmogorov-Smirnov est significative et le QQ-plot semble adéquat.
+```{r diagnostic2}
+proc2 = c(0.44, 1.08, 1.79, 2.92, 3.45, 4.57, 5.11, 5.91, 6.99, 7.52, 8.44, 9.84, 10.73, 11.77, 12.91, 13.49, 14.06, 15.1, 16.4, 16.91, 17.54, 18.32, 18.86, 19.38, 19.89)
+lambda2 = length(proc2)/20
+X2 = diff(proc2)
+ks.test(X2,'pexp', lambda1)$p.value
+qq_conf_plot(X2, distribution = qexp, dparams = list(lambda2))
+
+```
+
+Le test de Kolmogorov-Smirnov et le QQ-plot indiquent que ce deuxième processus ne semble pas pouvoir être modélisé par un processus de Poisson d'intensité $1.25$
+
+## Introduction à la théorie de la ruine
+
+1) Ici, les sinistres se produisent selon un processus de Poisson $(N_t)_{t\geq 0}$ d'intensité $\lambda >0$.
+Posons $(T_n)_{n \geq 0}$ la suite qui correspond aux instants de sinistres.
+On a la suite $(W_n)_{n \geq 1}$ de variables aléatoires positives (strictement) i.i.d qui représente les montants des remboursements associés aux sinistres.
+Ainsi, pour le premier sinistre $T_1$ est associé au montant de remboursement $W_1$, et ainsi de suite jusqu'au temps $t$. 
+De plus, d'après la relation $N_t = sup\{n>0| T_n \leq t\}$, nous avons donc $n = N_t$ instants de sinistres jusqu'au temps $t$. De ce fait, le montant total des remboursements dûs au temps $t\geq 0$ peut s'écrire comme un processus de Poisson composé $S_t$ (puisqu'il fait intervenir $N_t$) qui est tel que : $S_t = \sum_{i=1}^{N_t} W_i$
+
+
+
+2) Voici une représentation du processus de réserves $(R_t)_{t\geq 0}$ de la compagnie donné par le modèle de Cramer-Lundberg: 
+
+![Légende](Trajectoire.png) 
+
+\begin{equation}
+R_t = u + ct - S_t
+
+\end{equation}
+
+- u : capital initial
+- c : montant des primes
+
+- avec u le capital de la compagnie
+- c>0 montant des primes par unité de temps
+
+
+
+
+**3)**
+
+Soit la *probabilité de ruine * 
+
+\begin{equation}
+  
+ψ(u)=P(\exists t>0 : R_t<0 )
+
+\end{equation}
+
+**a)**
+
+Le temps d'arret $T = inf\{t>0| R_t<0\}$, correspond au premier instant de ruine, c'est à dire au premier moment $t$ tel que $R_t<0$, on a donc $S_T > u + cT$ et puisque $T$ est le premier instant de ruine on a $S_{T-1} \leq u + c(T-1) \leq u + cT$ (puisque $c>0$). 
+
+Nous obtenons donc l'inégalité suivante $S_T > u + cT \geq S_{T-1}$, ce qui implique que $S_T > S_{T-1}$. 
+
+Puisque $S_T = \sum_{i=1}^{N_T} W_i$, nous avons $S_T=S_{T-1} + W_{N_T}> S_{T-1}$ et donc $W_{N_T}>0$, cet événement nous indique qui il y a eu un instant de sinistre à l'instant $t=T_{N_T}$.
+
+Cette probabilité s'intéresse à l'événement $\{\exists t>0 : R_t<0 \}$, c'est à dire, si il existe un instant de ruine. Regarder cet événement revient à regarder l'existance du premier instant de ruine T. Ainsi, la probabilité de ruine peut s'écrire : 
+\begin{equation}
+\psi (u) = P(\exists n>1 : R_{T_n} < 0)
+\end{equation}
+
+
+**b)**
+
+Avoir $\{ R_{T_n} < 0\}$ est équivalent à $\{ u<S_{T_n} - cT_n\}$, ou encore, avec la relation entre les instants de saut $(T_n)$ et les temps d'attente $(X_k)$ du processus $N_t$, $T_n = \sum_{i=1}^{n} X_i$, $\left\{u<\sum_{i=1}^{n}W_i-c\sum_{i=1}^{n}X_i\right\}$, car par définition $N_{T_n}=n$
+On obtient l'égalité voulue en posant ${Y_i=W_i-cX_i}$:
+\begin{equation}
+\psi (u) = P( \exists n \geq 1 : \sum_{i=1}^{n} Y_i > u )
+\end{equation}
+
+**c)**
+
+- $S_t = \sum_{i=1}^{N_t} W_i$
+
+Regardons l'espérance de $S_t$
+Nous allons conditionner par $N(t)=n$, en utilisant le fait que les $W_i$ sont i.i.d et indépendants de $N_t$:
+
+
+\begin{equation}
+E(S_t| N(t)=n)= E(\sum_{i=1}^{N_t} W_i | N(t)=n)
+= E(\sum_{i=1}^{n} W_i | N(t)=n)
+= \sum_{i=1}^{n} E(W_i) 
+= n E(W_i)
+= n\cdot w
+\end{equation}
+
+On obtient donc:
+$E(S_t) = E(E(S_t| N(t))) = wE(N_t) = wt\lambda$
+Par conséquent :
+$E(R_t)= E(u+ct-S_t)= u+ (c-λw)t$
+
+Et on sait d'après l'énoncé que :
+
+$\rho = \frac{c}{λw}- 1 <0 
+\Leftrightarrow
+c<λw
+\Leftrightarrow
+c-λw<0$
+ 
+On en conclut que $\lim\limits_{t \rightarrow +\infty}E(R_t)=-\infty$
+
+Donc, 
+
+\begin{equation}
+\psi(u)=P(\exists n>1:R_{T_n}<0)=1 \quad  \forall u 
+
+\end{equation}
+
+
+**4)Estimation du risque de ruine**
+
+Pour estimer le risque de ruine, nous allons d'abord simuler les instants de sinistres $(T_n)$ du processus $(N_t)$ d'intensité $\lambda=1$. Puis, en fonction du nombre d'instants de saut, nous allons simuler les variables $W_n$, qui correspondent aux montants des remboursements associés aux sinistres, et qui suivent une loi exponentielle de paramètre 2/3.
+
+En reprenant, l'algorithme 2 de la question **3)** (IST), nous allons donc simuler des instants de sinitres de l'intervalle [0,t]. Puis de simuler les n montants des remboursements. Ensuite, afin de faire une approximation du risque de ruine, nous allons simuler plusieurs vecteurs Rt de taille n contenant les valeurs du processus des réserves sur l'intervalle [0,t], et regarder si chacun de ces vecteurs contient au moins une valeur t telle que $R_t <0$. Pour avoir une estimation du risque de ruine, il suffit de regarder le nombre de vecteur ayant vécu au moins un instant de ruine sur le nombre total de simlation
+
+
+```{r simulation ruine}
+t = 100
+beta = 2/3
+intensity = 1
+c =2
+u = 1
+nb = 1000 #nombre de simulations
+
+approx_risque_ruine = function(u, c, t, intensity, beta,nb){
+  r = 0
+  for(i in 1:nb){
+    sinistres = IST(t, intensity)
+    n = length(sinistres)
+    montantsremboursement = n_sauts(n,beta)
+    Rt = numeric(n)
+    for(j in 1:n){
+      Rt[j] = u + c*sinistres[j] - montantsremboursement[j]}
+    if(any(Rt<0)){
+      r = r+1   
+      }
+    }
+  return(r/nb)  
+}
+approx_risque_ruine(1,2,100,1,2/3,1000)
+
+```
+
+Le résultat obtenu est assez proche de la valeur théorique :
+
+$\psi(u)=\psi(0)$$e^{Ru}$
+
+
+$\psi(1)= \frac{λ}{βc}$$e^{{-β+}\frac{λ}{βc}}$
+
+=$\frac{3}{4}e^{\frac{-2}{3}}\frac{λ}{βc}$
+
+
+
+=$\frac{3}{4}e^{\frac{-1}{6}}$
+
+=$0.75 \cdot 0.8464817$
+
+≈$0.634861$
+
+
+
+On peut donc voir que l’équation de Lundberg est assez bien en pratique et peut etre utilisée.
+
+**5)**
+On a pour cette question: t = 31 jours, $N_t = 837$, $S_t = 158000$.
+Nous pouvons estimer $w=1/\beta=E(W_1)$ par $\frac{158000}{837} = 188,77$ et $\lambda$ par $N_t/t = 27$.
+
+Nous cherchons à determiner le capital initial *u* à prévoir pour dégager une marge d'au moins 20% sur les primes, c'est à dire $R_{31} \geq 1.2*c$ et que $\psi(u) < 0.05$.
+En utilisant l’équation de Lundberg on peut chercher un *u* tel que $\psi(u) < 0.05$.
+
+
+
