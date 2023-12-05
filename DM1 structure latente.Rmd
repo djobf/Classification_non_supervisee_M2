@@ -1,16 +1,18 @@
 ---
 title: "DM1 Modèles à structure latente"
 author: "Rajeeth Arumainathan, Jules Aubry, Youssef Ben Fadhel"
-date: "2023-11-24"
+date: '2023-11-24'
 output:
   html_document: default
+  pdf_document: default
 ---
 
-```{r, echo=TRUE,warning=FALSE}
+```{r,echo = FALSE,warning=FALSE}
 library(ggplot2)
 library(MASS)
 library(gridExtra)
 library(stats)
+library(cluster)
 data(crabs, package = "MASS")
 ```
 
@@ -20,7 +22,7 @@ data(crabs, package = "MASS")
 
 Nous travaillons sur les données crabs. Les données contiennent 5 mesures de morphologies faitent sur un échantillions de 200 crabes (taille du lobe frontal, largeur arrière, longueur de la carapace, largeur de la carapace et prondondeur du corps). Les crabs sont divisées en 4 classes, réparties selon l'espèce (bleue ou orange) et le sexe. L'objectifs serait d'imaginer une étude de clustering qui ne les utiliserait pas et par la suite de comparer la classification obtenue avec celles en espèce et en sexe.
 
-```{r}
+```{r,echo = FALSE}
 plots_list <- list()
 for (variable in c("FL", "RW", "CL", "CW", "BD")) {
   p <- ggplot(crabs, aes(x = !!as.symbol(variable))) +
@@ -43,7 +45,7 @@ L'ensembles des variables semblent avoir une distribution normale. On ne peut pa
 
 ### 2.a. Proportion de variance expliqué par les deux premières composantes
 
-```{r}
+```{r,echo = FALSE}
 df_crabs <- crabs[, c("FL", "RW", "CL", "CW", "BD")]
 df_crabs <- scale(df_crabs) #On standardise pour éviter que les variables avec des unités de mesure différentes aient un poids disproportionné dans l'analyse.
 results <- prcomp(df_crabs, scale = TRUE)
@@ -55,7 +57,7 @@ La première composante principale explique 95,77% de la variance des données a
 
 ### 1.b. Projection des données sur leur première composante principale
 
-```{r}
+```{r,echo = FALSE}
 plot(results$x[, 1], rep(0, length(results$x[, 1])),
      main = "Projection unidimensionnelle",
      xlab = "Première Composante Principale",
@@ -67,7 +69,7 @@ Aucun groupe ne se dégage de la projection des données sur leur première comp
 
 ### 1.c. Projection des données sur leur deuxième composante principale
 
-```{r}
+```{r,echo = FALSE}
 plot(results$x[, 2], rep(0, length(results$x[, 2])),
      main = "Projection unidimensionnelle",
      xlab = "Deuxième Composante Principale",
@@ -79,7 +81,7 @@ Deux groupe semblent se dégager de la projection des données sur leur deuxièm
 
 ### 1.d. Projection des données sur leurs deux premières composantes principales.
 
-```{r}
+```{r,echo = FALSE}
 plot(results$x[, 1],results$x[, 2],
      main = "Projection bidimensionnelle",
      xlab = "Première Composante Principale",
@@ -94,7 +96,7 @@ Deux groupes semblent également se dégager de la projection des données sur l
 
 L'ACP ne semblent pas former 4 groupes distincs mais seulement 2 pour les données crabs, en effet ils semblerais qu'on ne garde pas assez d'information sur la répartion des données pour les séparer en 4 groupes. Voyons ce que cela donne en affichant le sexe et l'espèce
 
-```{r}
+```{r,echo = FALSE}
 ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], sex = crabs$sex, sp = crabs$sp),aes(x = PC1, y = PC2, color = interaction(factor(sex), factor(sp)))) +
   geom_point(size = 3) +
   labs(title = "Projection des données sur PC1 et PC2",
@@ -109,7 +111,8 @@ En effet l'ACP a seulement séparé les males et les femelles, cepandant les dis
 
 On travaille à présent sur les données seeds, elles concernent des mesures de graines de trois variétés différentes de blé (Kama, Rosa et Canadian) :
 
-```{r}
+```{r,echo = FALSE}
+seeds <- read.table("https://archive.ics.uci.edu/ml/machine-learning-databases/00236/seeds_dataset.txt", header = FALSE)
 colnames(seeds) <- c("Aire", "Périmètre", "Compacité", "Longueur", "Largeur", "Asymétrie", "Longueur rainure", "Class")
 plots_list <- list()
 for (variable in c("Aire", "Périmètre", "Compacité", "Longueur", "Largeur", "Asymétrie", "Longueur rainure")) {
@@ -130,7 +133,7 @@ grid.arrange(grobs = plots_list, ncol = 3)
 
 La plupart des variables semblent collés à la distrubition de la loi normale. Regardons la répartion des données à travers l'ACP :
 
-```{r}
+```{r,echo = FALSE}
 df_seeds <- seeds[, c("Aire", "Périmètre", "Compacité", "Longueur", "Largeur", "Asymétrie", "Longueur rainure")]
 df_seeds <- scale(df_seeds) #On standardise pour éviter que les variables avec des unités de mesure différentes aient un poids disproportionné dans l'analyse.
 results <- prcomp(df_seeds, scale = TRUE)
@@ -149,28 +152,32 @@ L'ACP semblent mettrent en évidence 3 groupes, un à gauche, un en bas et un à
 
 On va maintenant utiliser la méthode des Kmeans pour obtenir une première classification. Pour cela il faut faire attention au nombre de cluster K que l'on souhaite (ici 3) mais on peut également faire attention au nombre maximal d'itérations pour éviter une exécution infinie.
 
-```{r}
+```{r,echo = FALSE}
 variables_kmeans <- seeds[, c("Aire", "Périmètre", "Compacité", "Longueur", "Largeur", "Asymétrie", "Longueur rainure")]
 kmeans_result <- kmeans(variables_kmeans, centers = 3)
 ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], Cluster =as.factor(kmeans_result$cluster)),aes(x = PC1, y = PC2, color = Cluster)) +geom_point(size = 3) +labs(title ="ACP",x = "PC1",y = "PC2",color = "Cluster")
 ```
+
 L'algorithme des k-means séparent en effet les données comme les 3 groupes que nous avions distingués. Regardons les coefficients de silhouette moyen pour chaque cluster :
 
-```{r}
+```{r,echo = FALSE}
 aggregate(silhouette(kmeans_result$cluster, dist(variables_kmeans))[, "sil_width"], by=list(Cluster=kmeans_result$cluster), FUN=mean)$x
 ```
+
 Les coefficients de silhouette moyen sont relativement élevé pour chaque cluster, les points sont en moyenne beaucoup plus proche de leur groupe que du groupe voisin. Regardons la somme des carrés intra et inter-cluster:
-```{r}
+
+```{r,echo = FALSE}
 paste("Intra-cluster",sum(kmeans_result$withinss))
 paste("Inter-cluster",sum(kmeans_result$betweenss))
 ```
+
 L'inertie inter-classe est élevée par rapport à l'inertie intra-classe, les clusters sont bien séparés les uns des autres.Il peut être intéressant de représenter graphiquement l'évolution des affectations des classes et des centres de celles-ci au cours des itérations de l'algorithme :
 
-```{r,warning=FALSE}
+```{r,echo = FALSE,warning=FALSE}
 plots_list <- list()
 for (i in 1:3) {
   set.seed(123)  # Fixer la graine aléatoire pour la reproductibilité
-  kmeans_result <- kmeans(variables_kmeans, centers = K, iter.max = i)
+  kmeans_result <- kmeans(variables_kmeans, centers = 3, iter.max = i)
   pca_centers <- prcomp(scale(kmeans_result$centers))
   centers_df <- data.frame(PC1 = pca_centers$x[, 1], PC2 = pca_centers$x[, 2])
   
@@ -188,7 +195,7 @@ On va maintenant regarder avec le clustering hiérarchique ascendant. On va pour
 
 ### Ward
 
-```{r}
+```{r,echo = FALSE}
 dist_matrix <- dist(seeds[, 1:7])
 hierarchical_result <- hclust(dist_matrix, method = "ward.D2")
 num_clusters <- 3
@@ -197,93 +204,96 @@ ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], Cluster =as.factor
 
 
 ```
+
 La fonction Ward favorise la formation de clusters homogènes en minimisant la variance intra-cluster. Les classes choisies semblent similaire à celle choisie par la méthode des k-means.
 
-```{r}
+```{r,echo = FALSE}
 aggregate(silhouette(hierarchical_clusters, dist(variables_kmeans))[, "sil_width"], by=list(Cluster=hierarchical_clusters), FUN=mean)$x
 ```
 
 Les coefficients de silhouette moyen sont légèrement inférieur à la méthode des k-means mais restent relativement élevé pour chaque cluster, les points sont en moyenne beaucoup plus proche de leur groupe que du groupe voisin.
 
-```{r}
+```{r,echo = FALSE}
 paste("Intra-cluster",sum(hierarchical_result$height[hierarchical_clusters]))
 paste("Inter-cluster",sum(hierarchical_result$height)-sum(hierarchical_result$height[hierarchical_clusters]))
 ```
+
 L'inertie inter-classe est élevée par rapport à l'inertie intra-classe, les clusters sont bien séparés les uns des autres.
 
 ### Single linkage
 
-```{R}
+```{R,echo = FALSE}
 hierarchical_result <- hclust(dist_matrix, method = "single")
   num_clusters <- 3
   hierarchical_clusters <- cutree(hierarchical_result, k = num_clusters)
 ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], Cluster =as.factor(hierarchical_clusters)),aes(x = PC1, y = PC2, color = Cluster)) +geom_point(size = 3) +labs(title ="single",x = "PC1",y = "PC2",color = "Cluster")
 ```
+
 La fonction single linkage semblent avoir crée une très grande classe et deux petites, en effet elle a tendance à former des clusters étendus.
 
-```{r}
+```{r,echo = FALSE}
 aggregate(silhouette(hierarchical_clusters, dist(variables_kmeans))[, "sil_width"], by=list(Cluster=hierarchical_clusters), FUN=mean)$x
 ```
+
 Les coefficients de silhouette moyen sont très élever pour le deuxieme et troisième cluster, en revanche il est très proche de 0 pour le premier cluster, les points sont aussi proche de leur groupe que du groupe voisin pour le premier cluster.
 
-```{r}
+```{r,echo = FALSE}
 paste("Intra-cluster",sum(hierarchical_result$height[hierarchical_clusters]))
 paste("Inter-cluster",sum(hierarchical_result$height)-sum(hierarchical_result$height[hierarchical_clusters]))
 ```
+
 L'inertie inter-classe reste élevée par rapport à l'inertie intra-classe, les clusters sont bien séparés les uns des autres.
 
 ### Complete linkage
 
-```{R}
+```{r,echo = FALSE}
 hierarchical_result <- hclust(dist_matrix, method = "complete")
   num_clusters <- 3
   hierarchical_clusters <- cutree(hierarchical_result, k = num_clusters)
 ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], Cluster =as.factor(hierarchical_clusters)),aes(x = PC1, y = PC2, color = Cluster)) +geom_point(size = 3) +labs(title ="complete",x = "PC1",y = "PC2",color = "Cluster")
 
 ```
+
 La fonctions complete linkage donne des classes similaires aux méthode ward et k-means, on peut l'expliquer par le fait qu'elle est moins sujette à la formation de clusters étendus.
-```{r}
+
+```{r,echo = FALSE}
 aggregate(silhouette(hierarchical_clusters, dist(variables_kmeans))[, "sil_width"], by=list(Cluster=hierarchical_clusters), FUN=mean)$x
 ```
+
 Les coefficients de silhouette moyen sont relativement élevé pour chaque cluster, les points sont en moyenne beaucoup plus proche de leur groupe que du groupe voisin.
 
-```{r}
+```{r,echo = FALSE}
 paste("Intra-cluster",sum(hierarchical_result$height[hierarchical_clusters]))
 paste("Inter-cluster",sum(hierarchical_result$height)-sum(hierarchical_result$height[hierarchical_clusters]))
 ```
+
 L'inertie inter-classe est élevée par rapport à l'inertie intra-classe, les clusters sont bien séparés les uns des autres.
 
 ### group average
 
-
-```{R}
+```{r,echo = FALSE}
 hierarchical_result <- hclust(dist_matrix, method = "average")
   num_clusters <- 3
   hierarchical_clusters <- cutree(hierarchical_result, k = num_clusters)
 ggplot(data.frame(PC1 = results$x[, 1], PC2 = results$x[, 2], Cluster =as.factor(hierarchical_clusters)),aes(x = PC1, y = PC2, color = Cluster)) +geom_point(size = 3) +labs(title ="average",x = "PC1",y = "PC2",color = "Cluster")
 
 ```
+
 La fonctions group average donne des classes similaires aux méthode précédentes, on peut l'expliquer par le fait qu'elle est moins sujette à la formation de clusters étendus.
 
-```{r}
+```{r,echo = FALSE}
 aggregate(silhouette(hierarchical_clusters, dist(variables_kmeans))[, "sil_width"], by=list(Cluster=hierarchical_clusters), FUN=mean)$x
 ```
+
 Les coefficients de silhouette moyen sont relativement élevé pour chaque cluster, les points sont en moyenne beaucoup plus proche de leur groupe que du groupe voisin.
 
-```{r}
+```{r,echo = FALSE}
 paste("Intra-cluster",sum(hierarchical_result$height[hierarchical_clusters]))
 paste("Inter-cluster",sum(hierarchical_result$height)-sum(hierarchical_result$height[hierarchical_clusters]))
 ```
+
 L'inertie inter-classe est élevée par rapport à l'inertie intra-classe, les clusters sont bien séparés les uns des autres.
 
 ## 3. Conclusion
 
 La majorité des méthodes donnent des résultat satisfaisants, à l'exeption de single linkage. On retrouve à chaque foit les 3 variétés de blé espérés. Ceci valide donc l'efficacité des différentes méthodes de classification.
-
-
-
-
-
- 
-
-
