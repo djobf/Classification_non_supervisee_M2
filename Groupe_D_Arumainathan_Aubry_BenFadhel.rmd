@@ -380,7 +380,7 @@ hist(estimated_model)
 
 Les densités estimées semblent être similaires aux vraies densités de notre échantillon.
 
-# 3.
+## 3.
 À présent, jouons un peu avec les arguments d’entrée de Rmixmod, nbCluster et
 models :
 
@@ -396,7 +396,7 @@ for (i in c(2,4,6)) {
 On remarque qu'en jouant sur le nombre de clusters et le modèle, l'estimateur entasse les densités et elle finisse par être tous très faible, de variance identique voir même d'espérance identique.
 
 
-# 4.
+## 4.
 
 ```{r,echo=FALSE}
 # Ajuster un modèle sur les données simulées avec mixmodCluster
