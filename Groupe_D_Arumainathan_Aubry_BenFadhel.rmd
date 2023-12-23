@@ -3,22 +3,34 @@ title: "TP2 de Modèles à Structure Latente"
 author: "Rajeeth Arumainathan, Jules Aubry, Youssef Ben Fadhel"
 date: "2023-12-20"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 # Modèles de mélange
-1. On note ici les paramètres du mélange par $\theta=(\mathbf{\pi}, \mathbf{\mu}, \mathbf{\sigma^2})$.  
-On a choisi:
-- Dans le cas de la densité bimodale : $\pi=(1/3,1/3,1/3), \, \mu=(-3,0,1) \, ,\sigma^2=(1,1,1)$.
-- Dans le cas de la densité unimodale symétrique :    $\pi=(1/3,1/3,1/3), \, \mu=(-1,0,1) \, ,\sigma^2=(1,1,1)$.
-- Dans le cas de la densité unimodale asymétrique :  $\pi=(2/3,1/6,1/6), \, \mu=(-1,0,1) \, ,\sigma^2=(1,1,1)$.
-- Dans le cas de la densité trimodale : $\pi=(1/3,1/3,1/3), \, \mu=(-4,0,4) \, ,\sigma^2=(1,1,1)$.
+
+1.  On note ici les paramètres du mélange par
+    $\theta=(\mathbf{\pi}, \mathbf{\mu}, \mathbf{\sigma^2})$.\
+    On a choisi:
+
+-   Dans le cas de la densité bimodale :
+    $\pi=(1/3,1/3,1/3), \, \mu=(-3,0,1) \, ,\sigma^2=(1,1,1)$.
+-   Dans le cas de la densité unimodale symétrique :
+    $\pi=(1/3,1/3,1/3), \, \mu=(-1,0,1) \, ,\sigma^2=(1,1,1)$.
+-   Dans le cas de la densité unimodale asymétrique :
+    $\pi=(2/3,1/6,1/6), \, \mu=(-1,0,1) \, ,\sigma^2=(1,1,1)$.
+-   Dans le cas de la densité trimodale :
+    $\pi=(1/3,1/3,1/3), \, \mu=(-4,0,4) \, ,\sigma^2=(1,1,1)$.
 
 ```{r, echo = FALSE, eval=TRUE}
 set.seed(1111)
 ```
+
 ```{r, echo=FALSE, eval=TRUE}
 # Fonction de calcul de la densité du mélange
 GMM_density <- function(x, nb_components, params) {
@@ -46,10 +58,19 @@ plot(x, GMM_density(x, J, params_trimod), main = expression(paste("Densité trim
 
 ```
 
-2. On se propose de tracer les histogrammes ainsi que les nuages de points de l'échantillon $X_1,\ldots,X_{200}$ simulé selon la loi de mélange $\sim f$ à $J=3$ composantes.  
-Par définition de celle-ci, pour tous $i=1,\ldots,200$ et $j=1,\ldots,J$ on a  $(X_i|Z_i=z_j)\overset{i.i.d}{\sim}\mathcal{N}(\mu_j, \sigma_j^2)$ (les $Z_j \overset{i.i.d}{\sim}\mathcal{M}(\pi_j)$ sont les variables latentes du modèle).
-Pour chaque observation $X_i$, on commence donc par tirer $Z_i=z_j$, puis on simule $X_i$ selon une normale $(\mu_j, \sigma_j^2)$.
-Les classes sont représentées en couleur: la classe 1 est en rouge, la classe 2 en vert et la classe 3 en bleu.
+2.  On se propose de tracer les histogrammes ainsi que les nuages de
+    points de l'échantillon $X_1,\ldots,X_{200}$ simulé selon la loi de
+    mélange $\sim f$ à $J=3$ composantes.\
+    Par définition de celle-ci, pour tous $i=1,\ldots,200$ et
+    $j=1,\ldots,J$ on a
+    $(X_i|Z_i=z_j)\overset{i.i.d}{\sim}\mathcal{N}(\mu_j, \sigma_j^2)$
+    (les $Z_j \overset{i.i.d}{\sim}\mathcal{M}(\pi_j)$ sont les
+    variables latentes du modèle). Pour chaque observation $X_i$, on
+    commence donc par tirer $Z_i=z_j$, puis on simule $X_i$ selon une
+    normale $(\mu_j, \sigma_j^2)$. Les classes sont représentées en
+    couleur: la classe 1 est en rouge, la classe 2 en vert et la classe
+    3 en bleu.
+
 ```{r, echo=FALSE, eval=TRUE}
 # Génération de l'échantillon
 sample_from_GMM <- function(sample_size, params) {
@@ -75,7 +96,9 @@ legend("topright", legend = "densité théorique", col = "red", lty = 1, lwd = 2
 mtext("Echantillon simulé selon f(. ; (1/3, 1/6, 1/2, 0, 5, 10, 1, 1, 4))", line=-2, side=3, outer=TRUE)
 ```
 
-On trace les mêmes graphiques pour les modèles de mélange de la question 1.
+On trace les mêmes graphiques pour les modèles de mélange de la question
+1.
+
 ```{r, echo=FALSE, eval=TRUE}
 sample_gmm_1 = sample_from_GMM(200, params_bimod)
 par(mfrow = c(1, 2))
@@ -100,9 +123,12 @@ legend("topright", legend = "densité théorique", col = "red", lty = 1, lwd = 2
 mtext(expression(paste("Echantillon simulé selon f(. ;", theta[2],")")), line=-2, side=3, outer=TRUE)
 ```
 
-On rappelle la règle du Maximum à Postériori (MAP): pour tout $i=1,\ldots,200$, la probabiblité à postériori de la composante $j$ est:
-\[\tau_{i,j}(\theta)=\frac{\pi_jf_{\mathcal{N(\mu_j,\sigma_j^2)}(x_i)}}{f(x_i;\theta)}\]
-On assigne alors à $x_i$ la classe $\hat{z_i}=\arg\underset{j=1,\ldots,J}{\min}\tau_{i,j}$.
+On rappelle la règle du Maximum à Postériori (MAP): pour tout
+$i=1,\ldots,200$, la probabiblité à postériori de la composante $j$ est:
+$$\tau_{i,j}(\theta)=\frac{\pi_jf_{\mathcal{N(\mu_j,\sigma_j^2)}(x_i)}}{f(x_i;\theta)}$$
+On assigne alors à $x_i$ la classe
+$\hat{z_i}=\arg\underset{j=1,\ldots,J}{\min}\tau_{i,j}$.
+
 ```{r, echo=FALSE, eval=TRUE}
 map <- function(x, params) {
   J=length(params$pi)
@@ -127,26 +153,51 @@ confusion <- function(predicted, true, J) {
   return(M)
 }
 ```
-On affiche les premières valeurs des vraies classes puis celles calculées par la règle du MAP:
+
+On affiche les premières valeurs des vraies classes puis celles
+calculées par la règle du MAP:
+
 ```{r, echo=TRUE, eval=TRUE}
 print(classes_map[1:20])
 print(sample_gmm[,2][1:20])
 ```
-On affiche aussi les matrices de confusion pour les 3 simulations de la question 2:
+
+On affiche aussi les matrices de confusion pour les 3 simulations de la
+question 2:
+
 ```{r, echo=TRUE, eval=TRUE}
 print(confusion(classes_map, sample_gmm[,2], 3))
 ```
-On peut voir que l'instance de mauvaise classification qui est significative est lorsque la MAP prédit la classe $2$ alors que l'observation appartient à la classe $3$. En effet, même si les moyennes des densités conditionnelles à $Z$ sont bien séparées ($0$, $5$ et $10$), le fait que la troisième classe ait une proportion beaucoup plus importante dans le mélange que la deuxième ($1/2$ contre $1/6$) ainsi qu'une variance associée plus importante que la deuxième ($4$ contre $1$) explique ce taux d'erreur de la MAP.  
-La matrice de confusion du mélange avec paramètre $π=(1/3,1/3,1/3),μ=(−3,0,1),σ^2=(1,1,1)$ est:
+
+On peut voir que l'instance de mauvaise classification qui est
+significative est lorsque la MAP prédit la classe $2$ alors que
+l'observation appartient à la classe $3$. En effet, même si les moyennes
+des densités conditionnelles à $Z$ sont bien séparées ($0$, $5$ et
+$10$), le fait que la troisième classe ait une proportion beaucoup plus
+importante dans le mélange que la deuxième ($1/2$ contre $1/6$) ainsi
+qu'une variance associée plus importante que la deuxième ($4$ contre
+$1$) explique ce taux d'erreur de la MAP.\
+La matrice de confusion du mélange avec paramètre
+$π=(1/3,1/3,1/3),μ=(−3,0,1),σ^2=(1,1,1)$ est:
+
 ```{r, echo=TRUE, eval=TRUE}
 print(confusion(classes_map_1, sample_gmm_1[,2], 3))
 ```
-La classification par règle du MAP assigne par erreur $22$ fois les échantillons du groupe 2 au groupe 3 et commet $15$ fois l'erreur inverse. Celà s'explique par le fait que ces classes ne soient pas bien séparées ($\mu_2=0$ et $\mu_3=1$ sont trop proches).  
-Le phénomène empire encore pour $π=(1/3,1/3,1/3),μ=(−1,0,1),σ^2=(1,1,1)$:
+
+La classification par règle du MAP assigne par erreur $22$ fois les
+échantillons du groupe 2 au groupe 3 et commet $15$ fois l'erreur
+inverse. Celà s'explique par le fait que ces classes ne soient pas bien
+séparées ($\mu_2=0$ et $\mu_3=1$ sont trop proches).\
+Le phénomène empire encore pour
+$π=(1/3,1/3,1/3),μ=(−1,0,1),σ^2=(1,1,1)$:
+
 ```{r, echo=TRUE, eval=TRUE}
 print(confusion(classes_map_2, sample_gmm_2[,2], 3))
 ```
-La densité conditionnelle de la classe $2$ déborde sur celles des classes $1$ et $3$, le MAP à du mal à distinguer la classe $1$ de la classe $2$ ainsi que la classe $3$ de la classe $2$.
+
+La densité conditionnelle de la classe $2$ déborde sur celles des
+classes $1$ et $3$, le MAP à du mal à distinguer la classe $1$ de la
+classe $2$ ainsi que la classe $3$ de la classe $2$.
 
 ```{r, echo=FALSE, eval=TRUE}
 GMM_loglikelihood <- function(sample, params) {
@@ -163,22 +214,38 @@ GMM_LL_mu_1_2 <- function(mu_1, mu_2) {
   return(GMM_loglikelihood(sample_gmm[,1], t))
 }
 ```
-On choisit de représenter la log-vraisemblance pour les paramètres inconnus $(\mu_1, \mu_2)$, avec tous les autres paramètres fixés à leur vraie valeur.
-On constate deux maxima locaux sur le graphique de la log-vraisemblance, aux coordonnées approximative ($0$,$5$) et ($5$, $0$)
+
+On choisit de représenter la log-vraisemblance pour les paramètres
+inconnus $(\mu_1, \mu_2)$, avec tous les autres paramètres fixés à leur
+vraie valeur. On constate deux maxima locaux sur le graphique de la
+log-vraisemblance, aux coordonnées approximative ($0$,$5$) et ($5$, $0$)
+
 ```{r, echo=FALSE}
 range_mu=seq(-5,10,0.5)
 z = outer(range_mu, range_mu, Vectorize(GMM_LL_mu_1_2, vectorize.args = c("mu_1", "mu_2")) )
 persp(range_mu, range_mu, z, ticktype='detailed', xlab="mu_1", ylab="mu_2", zlab="loglikelihood", theta=40, phi=30, col="lightblue")
 ```
 
-Le maximum de $l(\mu_1, \mu_2)$ est bien atteint en $(0,5)$ comme espéré:
+Le maximum de $l(\mu_1, \mu_2)$ est bien atteint en $(0,5)$ comme
+espéré:
 
 ```{r, echo=TRUE}
 c(range_mu[row(z)[which.max(z)]], range_mu[col(z)[which.max(z)]])
 ```
-Il correspond au cas où ($\mu_1, \mu_2$) ceux les vrais paramètres qui ont généré les données, il est naturel que ce couple maximise la vraisemblance. L'autre couple $(5,0)$ a une vraisemblance plus faible et correspond au cas où l'on inverserait les moyennes des classes $1$ et $2$. Celà a néanmoins du sens car les composantes $1$ et $2$ dans notre modèle spécifique n'ont pas les même proportions, bien qu'elles aient la même variance. Il est donc plausible que d'échanger les composantes donne une vraisemblance haute, mais pas maximale.  
-6. Le modèle $[p\_L_k\_B_k]$ désigne un modèle où les matrices de covariances des lois du mélange sont diagonales et les composantes ont toutes la même proportion. On a alors $B_j$ diagonale de déterminant $1$ et $\Sigma_j=\lambda_j B_j$, où $\lambda_j=|\Sigma_j|^{1/J}$. Dans notre cas, en dimension $2$, les paramètres du mélange sont:
-\[(p, \mu_1=
+
+Il correspond au cas où ($\mu_1, \mu_2$) ceux les vrais paramètres qui
+ont généré les données, il est naturel que ce couple maximise la
+vraisemblance. L'autre couple $(5,0)$ a une vraisemblance plus faible et
+correspond au cas où l'on inverserait les moyennes des classes $1$ et
+$2$. Celà a néanmoins du sens car les composantes $1$ et $2$ dans notre
+modèle spécifique n'ont pas les même proportions, bien qu'elles aient la
+même variance. Il est donc plausible que d'échanger les composantes
+donne une vraisemblance haute, mais pas maximale.\
+6. Le modèle $[p\_L_k\_B_k]$ désigne un modèle où les matrices de
+covariances des lois du mélange sont diagonales et les composantes ont
+toutes la même proportion. On a alors $B_j$ diagonale de déterminant $1$
+et $\Sigma_j=\lambda_j B_j$, où $\lambda_j=|\Sigma_j|^{1/J}$. Dans notre
+cas, en dimension $2$, les paramètres du mélange sont: $$(p, \mu_1=
 \begin{pmatrix}
 0 \\0
 \end{pmatrix}
@@ -196,12 +263,10 @@ Il correspond au cas où ($\mu_1, \mu_2$) ceux les vrais paramètres qui ont gé
 9 & 0\\ 0 & 4
 \end{pmatrix}
 )
-\]
-On a donc $\lambda=\lambda_1=2$ et $\lambda_2=6$ avec $B_1=\begin{pmatrix}
-1/2 & 0\\ 0 & 2
-\end{pmatrix}$, $B_2=\begin{pmatrix}
-3/2 & 0\\ 0 & 2/3
-\end{pmatrix}$.
+$$ On a donc $\lambda=\lambda_1=2$ et $\lambda_2=6$ avec
+$B_1=\begin{pmatrix} 1/2 & 0\\ 0 & 2 \end{pmatrix}$,
+$B_2=\begin{pmatrix} 3/2 & 0\\ 0 & 2/3 \end{pmatrix}$.
+
 ```{r, echo=FALSE, eval=TRUE}
 require('mvtnorm')
 GMM_density_mv <- function(x, y, params) {
@@ -251,3 +316,93 @@ theta = list(p=pi, mu=matrix(c(0,0,5,5),2,2), sig=cbind(sig1,sig2))
 isodensity(sample_size, theta)
 
 ```
+
+#Algorithme EM, dimension quelconque (Mixmod)
+
+## 1. Installation du package Rmixmod.
+
+````{r,echo=FALSE}
+#install.packages("Rmixmod")
+library(Rmixmod)
+````
+
+Rmixmod est un outil permettant d’ajuster un modèle de mélange de composantes gaussiennes à un ensemble de données avec un point de vue de clustering, d’estimation de densité ou d’analyse discriminante.
+
+## 2. 
+
+On commence par simuler un mélange gaussien à partir de trois lois normal de moyenne (-1, 0, 2), de variance (1, 1, 1) et avec des poids (0.4, 0.3, 0.3)  
+
+```{r,echo=FALSE}
+# Définir les paramètres du modèle de mélange gaussien
+set.seed(123)  # Pour la reproductibilité
+num_components <- 3
+means <- c(-1, 0, 2)
+sds <- c(1, 1, 1)
+weights <- c(0.4, 0.3, 0.3)
+
+# Simuler des données à partir du modèle de mélange gaussien
+n <- 1000  # Nombre d'échantillons
+component_idx <- sample(1:num_components, size = n, replace = TRUE, prob = weights)
+data <- numeric(n)
+
+for (i in 1:num_components) {
+  component_data <- rnorm(sum(component_idx == i), mean = means[i], sd = sds[i])
+  data[component_idx == i] <- component_data
+}
+
+# Tracer la densité des données simulées
+hist(data, probability = TRUE, col = "lightblue", main = "Densité du Mélange Gaussien")
+
+# Tracer la densité totale
+total_density <- density(data)
+lines(total_density, col = "red", lwd = 2)
+
+# Tracer la densité de chaque composante proportionnellement à son poids
+for (i in 1:num_components) {
+  component_data <- data[component_idx == i]
+  component_density <- density(component_data)
+  scaled_weight <- weights[i] * max(total_density$y) / max(component_density$y)
+  lines(component_density$x, component_density$y * scaled_weight, col = i, lty = 2, lwd = 2)
+}
+
+# Ajouter une légende
+legend("topright", legend = c("Densité totale", paste("Composant", 1:num_components)), col = c("red", 1:num_components), lty = c(1, rep(2, num_components)), lwd = 2)
+
+```
+
+À présent, on peut estimer la densité du modèle de mélange avec la fonction MixmodCluster du package Rmixmod. Cette fonction calcule un modèle de mélange optimal en fonction des critères fournis, et de la liste des modèles définis, à l’aide de l’algorithme spécifié.
+
+```{r,echo=FALSE}
+# Ajuster un modèle sur les données simulées avec mixmodCluster
+estimated_model <- mixmodCluster(data, nbCluster = 3)
+hist(estimated_model)
+```
+
+Les densités estimées semblent être similaires aux vraies densités de notre échantillon.
+
+# 3.
+À présent, jouons un peu avec les arguments d’entrée de Rmixmod, nbCluster et
+models :
+
+```{r,echo=FALSE}
+for (i in c(2,4,6)) {
+  for (j in c("diagonal","spherical")){
+     estimated_model <- mixmodCluster(simulated_data, nbCluster = i, models = mixmodGaussianModel(family = j))
+     hist(estimated_model)
+  }
+}
+```
+
+On remarque qu'en jouant sur le nombre de clusters et le modèle, l'estimateur entasse les densités et elle finisse par être tous très faible, de variance identique voir même d'espérance identique.
+
+
+# 4.
+
+```{r,echo=FALSE}
+# Ajuster un modèle sur les données simulées avec mixmodCluster
+estimated_model <- mixmodCluster(data, nbCluster = 2:8)
+hist(estimated_model)
+```
+
+Avec en argument d’entrée nbCluster = 2:8 Rmixmod semblent choisir le nombre de clusters le plus approprié entre 2 et 7, ici il a choisi 2, ce qui est intéressant, car c'est un mélange de 3 modèles gaussiens.
+
