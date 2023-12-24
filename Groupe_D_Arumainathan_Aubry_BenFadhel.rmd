@@ -9,7 +9,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE, warning=FALSE)
 ```
 
 # Modèles de mélange
@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
     $\pi=(1/3,1/3,1/3), \, \mu=(-4,0,4) \, ,\sigma^2=(1,1,1)$.
 
 ```{r, echo = FALSE, eval=TRUE}
-set.seed(1111)
+set.seed(2612)
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -60,13 +60,13 @@ plot(x, GMM_density(x, J, params_trimod), main = expression(paste("Densité trim
 
 2.  On se propose de tracer les histogrammes ainsi que les nuages de
     points de l'échantillon $X_1,\ldots,X_{200}$ simulé selon la loi de
-    mélange $\sim f$ à $J=3$ composantes.\
+    mélange $\sim f(\;\cdot \; ; (1/3, 1/6, 1/2, 0, 5, 10, 1, 1, 4))$ à $J=3$ composantes.\
     Par définition de celle-ci, pour tous $i=1,\ldots,200$ et
     $j=1,\ldots,J$ on a
-    $(X_i|Z_i=z_j)\overset{i.i.d}{\sim}\mathcal{N}(\mu_j, \sigma_j^2)$
+    $(X_i|Z_i=z_{ij})\overset{i.i.d}{\sim}\mathcal{N}(\mu_j, \sigma_j^2)$
     (les $Z_j \overset{i.i.d}{\sim}\mathcal{M}(\pi_j)$ sont les
     variables latentes du modèle). Pour chaque observation $X_i$, on
-    commence donc par tirer $Z_i=z_j$, puis on simule $X_i$ selon une
+    commence donc par tirer $Z_i=z_{ij}$, puis on simule $X_i$ selon une
     normale $(\mu_j, \sigma_j^2)$. Les classes sont représentées en
     couleur: la classe 1 est en rouge, la classe 2 en vert et la classe
     3 en bleu.
@@ -83,13 +83,14 @@ sample_from_GMM <- function(sample_size, params) {
   return(cbind(X, Z))
 }
 # Graphiques
+size = 1000
 theta = list(pi=c(1/3,1/6,1/2), mu=c(0,5,10), var=c(1,1,4))
-sample_gmm = sample_from_GMM(200, theta)
+sample_gmm = sample_from_GMM(size, theta)
 par(mfrow = c(1, 2))
 colors <- c("red", "green", "blue")[sample_gmm[, 2]]
-plot(sample_gmm[, 1], rep(0, 200), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
+plot(sample_gmm[, 1], rep(0, size), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
 axis(side=1)
-hist(sample_gmm[,1], probability=TRUE, breaks=30, main="",  xlab="x")
+hist(sample_gmm[,1], probability=TRUE, breaks=15, main="",  xlab="x")
 f <- function(x){return(GMM_density(x,3,theta))}
 curve(f, add=TRUE, col="red")
 legend("topright", legend = "densité théorique", col = "red", lty = 1, lwd = 2)
@@ -100,23 +101,23 @@ On trace les mêmes graphiques pour les modèles de mélange de la question
 1.
 
 ```{r, echo=FALSE, eval=TRUE}
-sample_gmm_1 = sample_from_GMM(200, params_bimod)
+sample_gmm_1 = sample_from_GMM(size, params_bimod)
 par(mfrow = c(1, 2))
 colors <- c("red", "green", "blue")[sample_gmm_1[, 2]]
-plot(sample_gmm_1[, 1], rep(0, 200), pch = '|', cex=0.7, col = colors, main = "", xlab = "", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
+plot(sample_gmm_1[, 1], rep(0, size), pch = '|', cex=0.7, col = colors, main = "", xlab = "", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
 axis(side = 1)
-hist(sample_gmm_1[,1], probability=TRUE, breaks=30, main="", xlab="x")
+hist(sample_gmm_1[,1], probability=TRUE, breaks=15, main="", xlab="x")
 f <- function(x){return(GMM_density(x,3,params_bimod))}
 curve(f, add=TRUE, col="red")
 legend("topright", legend = "densité théorique", col = "red", lty = 1, lwd = 2)
 mtext(expression(paste("Echantillon simulé selon f(. ;", theta[1], ")")), line=-2, side=3, outer=TRUE)
 
-sample_gmm_2 = sample_from_GMM(200, params_unimod_sym)
+sample_gmm_2 = sample_from_GMM(size, params_unimod_sym)
 par(mfrow = c(1, 2))
 colors <- c("red", "green", "blue")[sample_gmm_2[, 2]]
-plot(sample_gmm_2[, 1], rep(0, 200), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
+plot(sample_gmm_2[, 1], rep(0, size), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", ylim=c(-0.5,0.5), axes=FALSE)
 axis(side=1)
-hist(sample_gmm_2[,1], probability=TRUE, breaks=20, main="", xlab="x")
+hist(sample_gmm_2[,1], probability=TRUE, breaks=15, main="", xlab="x")
 f <- function(x){return(GMM_density(x,3,params_unimod_sym))}
 curve(f, add=TRUE, col="red")
 legend("topright", legend = "densité théorique", col = "red", lty = 1, lwd = 2)
@@ -158,30 +159,30 @@ On affiche les premières valeurs des vraies classes puis celles
 calculées par la règle du MAP:
 
 ```{r, echo=TRUE, eval=TRUE}
-print(classes_map[1:20])
-print(sample_gmm[,2][1:20])
+classes_map[1:20]
+sample_gmm[,2][1:20]
 ```
 
 On affiche aussi les matrices de confusion pour les 3 simulations de la
 question 2:
 
 ```{r, echo=TRUE, eval=TRUE}
-print(confusion(classes_map, sample_gmm[,2], 3))
+confusion(classes_map, sample_gmm[,2], 3)
 ```
 
-On peut voir que l'instance de mauvaise classification qui est
+On peut voir que l'instance de mauvaise classification qui est la plus
 significative est lorsque la MAP prédit la classe $2$ alors que
 l'observation appartient à la classe $3$. En effet, même si les moyennes
 des densités conditionnelles à $Z$ sont bien séparées ($0$, $5$ et
 $10$), le fait que la troisième classe ait une proportion beaucoup plus
 importante dans le mélange que la deuxième ($1/2$ contre $1/6$) ainsi
 qu'une variance associée plus importante que la deuxième ($4$ contre
-$1$) explique ce taux d'erreur de la MAP.\
+$1$) explique ce taux d'erreur du MAP.\
 La matrice de confusion du mélange avec paramètre
 $π=(1/3,1/3,1/3),μ=(−3,0,1),σ^2=(1,1,1)$ est:
 
 ```{r, echo=TRUE, eval=TRUE}
-print(confusion(classes_map_1, sample_gmm_1[,2], 3))
+confusion(classes_map_1, sample_gmm_1[,2], 3)
 ```
 
 La classification par règle du MAP assigne par erreur $22$ fois les
@@ -192,7 +193,7 @@ Le phénomène empire encore pour
 $π=(1/3,1/3,1/3),μ=(−1,0,1),σ^2=(1,1,1)$:
 
 ```{r, echo=TRUE, eval=TRUE}
-print(confusion(classes_map_2, sample_gmm_2[,2], 3))
+confusion(classes_map_2, sample_gmm_2[,2], 3)
 ```
 
 La densité conditionnelle de la classe $2$ déborde sur celles des
@@ -240,12 +241,11 @@ correspond au cas où l'on inverserait les moyennes des classes $1$ et
 $2$. Celà a néanmoins du sens car les composantes $1$ et $2$ dans notre
 modèle spécifique n'ont pas les même proportions, bien qu'elles aient la
 même variance. Il est donc plausible que d'échanger les composantes
-donne une vraisemblance haute, mais pas maximale.\
+donne une vraisemblance haute, mais pas maximale.  
 6. Le modèle $[p\_L_k\_B_k]$ désigne un modèle où les matrices de
 covariances des lois du mélange sont diagonales et les composantes ont
 toutes la même proportion. On a alors $B_j$ diagonale de déterminant $1$
-et $\Sigma_j=\lambda_j B_j$, où $\lambda_j=|\Sigma_j|^{1/J}$. Dans notre
-cas, en dimension $2$, les paramètres du mélange sont: $$(p, \mu_1=
+et $\Sigma_j=\lambda_j B_j$, où $\lambda_j=|\Sigma_j|^{1/J}$. Les paramètres du mélange choisi en dimension 2 sont: $$(p, \mu_1=
 \begin{pmatrix}
 0 \\0
 \end{pmatrix}
@@ -254,7 +254,7 @@ cas, en dimension $2$, les paramètres du mélange sont: $$(p, \mu_1=
 1 & 0\\ 0 & 4
 \end{pmatrix}
 ) \text{ et }
-(p, \mu_2
+(p, \mu_2=
 \begin{pmatrix}
 3 \\ 3
 \end{pmatrix}
@@ -289,120 +289,340 @@ sample_from_GMM_2D <- function(sample_size, params) {
   return(list(obs=X, classes=Z))
 }
 
-isodensity <- function(sample_size, theta) {
+isodensity <- function(sample_size, theta, lambda) {
   sample = sample_from_GMM_2D(sample_size, theta)
   X=sample$obs
   Z=sample$classes
   colors <- c("red", "blue")[Z]
-  plot(X[1,],X[2,], col=colors, pch="x", cex=0.7)
+  plot(X[1,],X[2,], col=colors, pch="x", cex=0.7, main=paste0("Observations et isodensité pour p = ",theta$p," ,lambda = ", lambda))
   range_x = seq(-5,25,0.1)
   z = outer(range_x, range_x, function(x,y) GMM_density_mv(x,y,theta))
   cols <- hcl.colors(10, "YlOrRd")
   contour(range_x,range_x, z, add=TRUE, col=cols, nlevels=10)
 }
 sample_size = 400
-isodensity(sample_size, theta)
+isodensity(sample_size, theta, lambda)
 
 lambda = 2*lambda
 sig1 = lambda * matrix(c(1/2,0,0,2), 2, 2)
 theta = list(p=pi, mu=matrix(c(0,0,5,5),2,2), sig=cbind(sig1,sig2))
-isodensity(sample_size, theta)
+isodensity(sample_size, theta, lambda)
 
 
 lambda = lambda/2
 pi = pi/2
 sig1 = lambda * matrix(c(1/2,0,0,2), 2, 2)
 theta = list(p=pi, mu=matrix(c(0,0,5,5),2,2), sig=cbind(sig1,sig2))
-isodensity(sample_size, theta)
+isodensity(sample_size, theta, lambda)
 
 ```
 
-#Algorithme EM, dimension quelconque (Mixmod)
+# Algorithme EM, dimension 1
+1. a) Ici, $\Theta = \left\{ (\pi_1, \ldots ,\pi_J, \mu_1, \ldots ,\mu_J, {\sigma_1}^2, \ldots ,{\sigma_J}^2) \in \Delta_J \times \mathbb{R}^J \times \mathbb{R}_{>0}^j \right\}$ où $\Delta_J$ est le $J$-simplexe.
+Dans le cadre de notre échantillon $\left\{ X_{1}, \ldots, X_{n} \right\}$ supposé issu d'une modèle GMM à J classes avec variable latente $Z$, l'algorithme EM s'écrit:
 
-## 1. Installation du package Rmixmod.
+*Initialisation*: choix de $\theta^{(0)}$
 
-````{r,echo=FALSE}
+*Récursion:* pour $t=1, \ldots , t_{max}$
+
+*(E):* On cherche à calculer $Q(\theta, \theta^{(t)}) = \mathbb{E}[{\log L_c(\theta | X_{1}, \ldots ,X_{n})}]$. La log-vraisemblance complète est $\log \mathcal{L_c}(\theta) = \sum_{j=1}^J \sum_{i=1}^n Z_{i,j} \log(\pi_j \phi(X_{i},\mu_j,\sigma_j^2)$.
+Donc $Q(\theta, \theta^{(t)}) = \sum_{j=1}^J \sum_{i=1}^n \tau_{ij}(\theta^{(t)}) (\log(\pi_j + \phi(X_{i},\mu_j,\sigma_j^2)$
+Alors: $\begin{equation*} Q(\theta, \theta^{(t)})=\sum_{j=1}^J \log(\pi_j) \sum_{i=1}^n \tau_{ij} +  \sum_{j=1}^J \sum_{i=1}^n \tau_{ij} \log(\phi(X_{i},\mu_j,\sigma_j^2)) \quad (1)\end{equation*}$.  
+On définit $\rho_j=\sum_{i=1}^n\tau_{ij}(\theta^{(t)})=\mathbb{E}[\#\{Z_{i,j}=1\}]$. 
+
+*(M):* On cherche $\theta^{(t+1)} = \arg\max_{\theta \in \Theta} Q(\theta, \theta^{(t)})$.
+Les problèmes d'optimisations en $\pi$ et en ($\mu, \sigma^2$) sont indépendants par la décomposition (1) de la fonction objectif. On maximise d'abord $\sum_{j=1}^J \rho_j \log(\pi_j)$ sous les contraintes $\forall j, \pi_j \geq 0$ et $\sum_{k=1}^J \pi_k = 1$. 
+Le Lagrangien est donné par $\mathcal{L}(\pi, \lambda, \mu) = \sum_{j=1}^J \rho_j \log(\pi_j) + \lambda(\sum_{j=1}^J \pi_j - 1) - \sum_{j=1}^J \mu_j\pi_j$. 
+
+$\forall j=1, \ldots, J$, on a :
+
+\begin{equation*}
+\left\{
+\begin{array}{ll}
+\partial_{\pi_j} \mathcal{L}(\pi^{*}, \lambda^{*}, \mu^{*}) & = 0 = \frac{\rho_j}{\pi_j^{*}} + \lambda^{*} \quad (2) \\
+\partial_{\lambda} \mathcal{L}(\pi^{*}, \lambda^{*}, \mu^{*}) & = 0 \quad (3) \\
+\partial_{\mu_j} \mathcal{L}(\pi^{*}, \lambda^{*}, \mu^{*}) & = 0
+\end{array}
+\right.
+\end{equation*}
+
+De (2) et (3), on tire $\lambda^* = - \sum_{k=1}^J \rho_k$ et $\pi_j^* = \frac{\rho_j}{\sum_{k=1}^J \rho_k}$.
+
+Or, $\sum_{k=1}^J \rho_k = \sum_{i=1}^n \sum_{j=1}^J \mathbb{E}[Z_{ij} | X_1, \ldots, X_n] = n$, d'où $\pi_j^*= \frac{\rho_j}{n}$
+
+Maintenant, on maximise $\sum_{i=1}^n \sum_{j=1}^J \tau_{ij} \phi(X_{i},\mu_j,\sigma_j^2)$ sur $\mathbb{R}^J \times \mathbb{R}_{>0}^J$.
+
+Cela revient à maximiser $\forall j=1, \ldots, J$, la fonction $g(\mu_j, \sigma_j^2) = \sum_{i=1}^n \tau_{ij}\phi(X_{i};\mu_j,\sigma_j^2)$ qui est $C^2$ convexe sur l'ouvert $\mathbb{R}^J \times \mathbb{R}_{>0}^J$.  
+On cherche donc $(\hat{\mu}_k, \hat{\sigma_k}^{2})$ qui annule $\nabla {g}$.
+Cela donne:
+$$\partial_{\sigma_j^2} g (\hat{\mu}_j, \hat{\sigma_j}^{2}) = 0 \quad \Leftrightarrow \quad \frac{-1}{\hat{\sigma_j}^{2}} \sum_{i=1}^n \tau_{ij} (\hat{\mu_j} - X_i) = 0 \quad \Leftrightarrow \quad \hat{\mu_j} = \frac{1}{\rho_j} \sum_{i=1}^n \tau_{ij} X_{i}$$
+Aussi, pour la variance :
+$$\partial_{\sigma_j^2} g (\hat{\mu}_j, \hat{\sigma_j}^{2}) = 0 \quad \Leftrightarrow \quad -\frac{1}{2} \sum_{i=1}^n \frac{\rho_{ij}}{\hat{\sigma_j}^2}+ \frac{1}{2\hat{\sigma}_j^{2}} \sum_{i=1}^n \tau_{ij}(X_i - \hat{\mu_j})^2 = 0\quad \Leftrightarrow \quad \hat{\sigma}_j^2 = \frac{1}{\rho_j} \sum_{i=1}^n \tau_{ij} (X_i - \hat{\mu_j})^2$$
+2. a)  
+```{r,echo=FALSE}
+EM <- function(X, K, theta0, tmax) {
+  # Initialisation
+  pi = theta0$pi
+  mu = theta0$mu
+  sigma2 = theta0$var
+  n = length(X)
+  t = 0
+  loglikelihoods = vector(length = tmax)
+  while(t<tmax) {
+    # Etape E
+    tau = matrix(nrow = n, ncol = K)
+    for(j in 1:K) {
+      for(i in 1:n) {
+        tau[i,j] = pi[j]*dnorm(X[i], mean=mu[j], sd=sqrt(sigma2[j]))/ GMM_density(X[i], K, params=list(pi=pi, mu=mu, var=sigma2))
+      }
+      rho = sum(tau[,j])
+    # Etape M
+      pi[j] = rho/n
+      mu[j] = (X %*% tau[,j])/rho
+      sigma2[j] = (tau[,j] %*% (X-rep(mu[j], n))^2)/rho
+    }
+    loglikelihoods[t+1] = GMM_loglikelihood(X, params=list(pi=pi, mu=mu, var=sigma2))
+    t = t+1
+  }
+  return(
+    list(theta=list(pi=pi, mu=mu, var=sigma2),  ll=loglikelihoods)
+  )
+}
+EM_results <- function(X, theta_hat, theta_true, true_classes, classes_map) {
+  J = length(theta_hat)
+  hist(X, probability = TRUE, breaks=20, ylim=c(0,0.2))
+  f <- function(x) GMM_density(x, J, theta_hat)
+  curve(f, add=TRUE, col="red")
+  f <- function(x) GMM_density(x, J, theta_true)
+  curve(f, add=TRUE, col="blue")
+  legend("topright", legend = c("Densité paramètres EM", "Vraie densité"), col = c("red","blue"), lty = 1, lwd = 2)
+  classes_EM = suppressWarnings(map_sample(X, theta_hat))
+  colors <- c("blue", "red", "green")[classes_EM]
+    par(new=FALSE)
+  plot(X, rep(2, size), pch = '|', cex=0.7, col = colors, main="Classes calculées par EM (haut) vs. \n vraies classes (milieu) vs. \n classes par MAP", xlab="", ylab = "", axes=FALSE, ylim=c(-10,10))
+  axis(side=1)
+  colors <- c("blue", "red", "green")[true_classes]
+  par(new=TRUE)
+  plot(X, rep(0, size), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", axes=FALSE, ylim=c(-10,10))
+  axis(side=1)
+    colors <- c("blue", "red", "green")[classes_map]
+  par(new=TRUE)
+  plot(X, rep(-2, size), pch = '|', cex=0.7, col = colors, main = "", xlab="", ylab = "", axes=FALSE,ylim=c(-10,10))
+  axis(side=1)
+  return(list(Confusion_EM=confusion(classes_EM, true_classes, 3), confusion_map=confusion(classes_map, true_classes, 3)))
+}
+
+X = sample_gmm[,1]
+true_classes = sample_gmm[,2]
+theta_true = list(pi=c(1/3,1/6,1/2), mu=c(0,5,10), var=c(1,1,4))
+theta_init = list(pi=rep(1/3, 3), mu = sample(X, 3, replace=TRUE), var=rep(var(X), 3))
+tmax=100
+EM_output = EM(X, K=3, theta_init, tmax)
+theta_EM = EM_output$theta
+```
+On présente la sortie de l'algorithme EM pour l'échantillon de la question 2. de l'exercice précédent avec les paramètre initiaux:  
+
+- $\pi_0=(1/J,\ldots,1/J)$
+- les composantes de $\mu_{0}$ choisies uniformément parmi les observations
+- $\sigma_0^2=\hat{\mathbb{V}}\{X_1,\ldots,X_n\}$ la variance empirique de l'échantillon.  
+
+```{r, echo=FALSE}
+plot(EM_output$ll, type="S", main="Evolution de la log-vraisemblance", xlab="t", ylab=expression(paste("l(",theta^{(t)},")")))
+```
+
+On retrouve bien le résultat du cours qui assure que la vraisemblance croît à chaque pas de temps.
+On remarque aussi un palier autour de la $10^e$ itération. Si on notre critère d'arrêt nous faisait nous arrêter quand $l$ n'évolue plus assez, on aurait perdu un petit gain en vraisemblance en nous arrêtant trop tôt.  
+c),d) 
+Les paramètres de sortie de l'EM, la log-vraisemblance à l'itération finale sont présentés, ainsi que la densité ajustée puis la classification (comparée à celle du MAP).
+```{r, echo=TRUE}
+EM_output$theta
+EM_output$ll[tmax]
+EM_results(X, theta_EM, theta_true, true_classes, classes_map)
+```
+Remarque: l'algorithme a interverti le label des classes $1$ et $3$.
+b) On essaie d'abord de choisir le moyennes initiales en les éloignant le plus possible, i.e $\mu_j=X_{(j)}$:
+```{r, echo=FALSE}
+theta_init = list(pi=rep(1/3, 3), mu = c(min(X), (min(X)+max(X))/2, max(X)), var=rep(var(X), 3))
+EM_output = EM(X, 3, theta_init, tmax)
+```
+```{r, echo=TRUE}
+EM_output$theta
+EM_output$ll[tmax]
+```
+Puis on choisit comme valeurs initiales les vraies valeurs du paramètre :
+```{r, echo=FALSE}
+theta_init = theta_true
+EM_output = EM(X, 3, theta_init, tmax)
+```
+```{r, echo=TRUE}
+EM_output$theta
+EM_output$ll[tmax]
+```
+On constate que dans ce cas de figure particulier, ces quelques valeurs de paramètre initial ne changent pas vraiment la donne, tant au niveau des paramètres de sortie que de la classification finale (si on prend on compte le label switching).
+
+# Algorithme EM, dimension quelconque (Mixmod)
+
+````{r,echo=FALSE, warning=FALSE}
 #install.packages("Rmixmod")
 library(Rmixmod)
 ````
 
-Rmixmod est un outil permettant d’ajuster un modèle de mélange de composantes gaussiennes à un ensemble de données avec un point de vue de clustering, d’estimation de densité ou d’analyse discriminante.
-
-## 2. 
-
-On commence par simuler un mélange gaussien à partir de trois lois normal de moyenne (-1, 0, 2), de variance (1, 1, 1) et avec des poids (0.4, 0.3, 0.3)  
+2. On commence par simuler un mélange gaussien à partir de trois lois normales de moyennes $(-1, 0, 2)$, de variances $(1, 1, 1)$ et avec des proportions $(0.4, 0.3, 0.3)$.
 
 ```{r,echo=FALSE}
 # Définir les paramètres du modèle de mélange gaussien
-set.seed(123)  # Pour la reproductibilité
 num_components <- 3
 means <- c(-1, 0, 2)
-sds <- c(1, 1, 1)
+vars <- c(1, 1, 1)
 weights <- c(0.4, 0.3, 0.3)
-
+theta <- list(pi=weights, mu=means, var=vars)
 # Simuler des données à partir du modèle de mélange gaussien
 n <- 1000  # Nombre d'échantillons
-component_idx <- sample(1:num_components, size = n, replace = TRUE, prob = weights)
-data <- numeric(n)
-
-for (i in 1:num_components) {
-  component_data <- rnorm(sum(component_idx == i), mean = means[i], sd = sds[i])
-  data[component_idx == i] <- component_data
-}
-
+data = sample_from_GMM(n, theta)[,1]
 # Tracer la densité des données simulées
 hist(data, probability = TRUE, col = "lightblue", main = "Densité du Mélange Gaussien")
-
-# Tracer la densité totale
-total_density <- density(data)
-lines(total_density, col = "red", lwd = 2)
-
-# Tracer la densité de chaque composante proportionnellement à son poids
+f <- function(x) GMM_density(x, num_components, theta)
+curve(f, add=TRUE, col="black")
 for (i in 1:num_components) {
-  component_data <- data[component_idx == i]
-  component_density <- density(component_data)
-  scaled_weight <- weights[i] * max(total_density$y) / max(component_density$y)
-  lines(component_density$x, component_density$y * scaled_weight, col = i, lty = 2, lwd = 2)
+  f <- function(x) theta$pi[i]*dnorm(x, theta$mu[i], sqrt(theta$var[i]))
+  curve(f, add = TRUE, col=i+1, lty=2)
 }
 
 # Ajouter une légende
-legend("topright", legend = c("Densité totale", paste("Composant", 1:num_components)), col = c("red", 1:num_components), lty = c(1, rep(2, num_components)), lwd = 2)
+legend("topright", legend = c("Densité totale", paste("Composant", 1:num_components)), col = c("black", 2:num_components+1), lty = c(1, rep(2, num_components)), lwd = 2)
 
 ```
 
 À présent, on peut estimer la densité du modèle de mélange avec la fonction MixmodCluster du package Rmixmod. Cette fonction calcule un modèle de mélange optimal en fonction des critères fournis, et de la liste des modèles définis, à l’aide de l’algorithme spécifié.
 
-```{r,echo=FALSE}
+```{r,echo=FALSE, eval=FALSE}
 # Ajuster un modèle sur les données simulées avec mixmodCluster
 estimated_model <- mixmodCluster(data, nbCluster = 3)
-hist(estimated_model)
+hist(estimated_model, main=NULL)
+mtext("Estimation de la densité, \n 3 clusters")
 ```
 
 Les densités estimées semblent être similaires aux vraies densités de notre échantillon.
 
-## 3.
-À présent, jouons un peu avec les arguments d’entrée de Rmixmod, nbCluster et
+3. À présent, jouons un peu avec les arguments d’entrée de Rmixmod, nbCluster et
 models :
 
-```{r,echo=FALSE}
+```{r,echo=FALSE, eval=FALSE}
 for (i in c(2,4,6)) {
   for (j in c("diagonal","spherical")){
-     estimated_model <- mixmodCluster(simulated_data, nbCluster = i, models = mixmodGaussianModel(family = j))
-     hist(estimated_model)
+     estimated_model <- mixmodCluster(data, nbCluster = i, models = mixmodGaussianModel(family = j))
+     hist(estimated_model, main=NULL)
+     mtext(paste0("Densité estimée: ", i, " clusters, modèle: ", j))
   }
 }
 ```
 
-On remarque qu'en jouant sur le nombre de clusters et le modèle, l'estimateur entasse les densités et elle finisse par être tous très faible, de variance identique voir même d'espérance identique.
-
-
-## 4.
-
-```{r,echo=FALSE}
+On remarque que le fait de choisir plus de clusters que le nombre réel classes n'a pour effet que de dupliquer les classes (on a des classes superflues avec moyennes et variances très proches les unes des autres ainsi qu'une proportion faible). Cependant, baisser le nombre de classes à un effet plus dommageable sur la qualité de l'estimation de la densité.
+```{r,echo=FALSE, eval=FALSE}
 # Ajuster un modèle sur les données simulées avec mixmodCluster
 estimated_model <- mixmodCluster(data, nbCluster = 2:8)
 hist(estimated_model)
 ```
+4. L'argument *nbCluster = 2:8 Rmixmod* indique que Rmixmod choisit le nombre de clusters le plus vraisemblant entre $2$ et $8$. Ici, il a en choisi $2$, alors que le modèle réel est à $3$ classes, ce qui est compréhensible car les centres des 2e et 3e clusters sont très proches.
 
-Avec en argument d’entrée nbCluster = 2:8 Rmixmod semblent choisir le nombre de clusters le plus approprié entre 2 et 7, ici il a choisi 2, ce qui est intéressant, car c'est un mélange de 3 modèles gaussiens.
+5. a) On se propose ici de simuler plusieurs échantillons issus de GMM unidimensionels à deux composantes. On fixe le centre du premier cluster à $0$ et on fera varier la distance entre les deux clusters ainsi que la taille de l'échantillon afin d'étudier les performances du clustering par BIC puis par ICL.
+```{r,echo=FALSE, eval=TRUE}
+dist_means = seq(0.1, 7, 0.7)
+sample_size = seq(20, 1000, 70)
+results_clust_BIC <- function(dist, n) {
+  theta = list(pi=c(0.5,0.5), mu=c(0, dist), var=c(1,1))
+  X = sample_from_GMM(n, theta)[,1]
+  model = mixmodGaussianModel(listModels = "Gaussian_pk_Lk_Ck")
+  return(mixmodCluster(X, criterion="BIC", nbCluster=1:4, models=model)["bestResult"]["nbCluster"])
+}
+results_clust_ICL <- function(dist, n) {
+  theta = list(pi=c(0.5,0.5), mu=c(0, dist), var=c(1,1))
+  X = sample_from_GMM(n, theta)[,1]
+  model = mixmodGaussianModel(listModels = "Gaussian_pk_Lk_Ck")
+  return(mixmodCluster(X, criterion="ICL", nbCluster=1:4, models=model)["bestResult"]["nbCluster"])
+}
 
+results_clust_BIC = Vectorize(results_clust_ICL, vectorize.args = c("dist", "n"))
+results_clust_ICL = Vectorize(results_clust_BIC, vectorize.args = c("dist", "n"))
+nb_classes_BIC = outer(dist_means, sample_size, results_clust_BIC)
+nb_classes_ICL = outer(dist_means, sample_size, results_clust_ICL)
+
+df <- expand.grid(a = dist_means, b = sample_size)
+df$M <- as.vector(nb_classes_BIC)
+
+require(ggplot2)
+ggplot(df, aes(x = a, y = b, fill = factor(M))) +
+    geom_tile(color = "white") +
+    scale_fill_manual(values = heat.colors(3), name = "nbCluster") +
+    labs(x = "Distance inter-clusters", y = "Taille de l'échantillon",
+         title = "Nombre de clusters proposé par BIC") +
+    theme_minimal()
+df$M <- as.vector(nb_classes_ICL)
+ggplot(df, aes(x = a, y = b, fill = factor(M))) +
+    geom_tile(color = "white") +
+    scale_fill_manual(values = heat.colors(3), name = "nbCluster") +
+    labs(x = "Distance inter-clusters", y = "Taille de l'échantillon",
+         title = "Nombre de clusters proposé par ICL") +
+    theme_minimal()
+```
+
+Le clustering par BIC et celui par ICL on sur cet example des performances similaires en termes de détection du nombre de cluster, ils sélectionnent le vrai nombre de composantes lorsque les centres des classes sont éloignés (on aurait pu s'attendre à ce que la taille de l'échantillon ait une importance, mais ce n'est pas le cas ici).  
+
+b) <span style="color:red">On charge le fichier "seeds_dataset.txt" présent dans le répertoire courant</span>
+```{r, echo=FALSE}
+seeds <- read.csv("seeds_dataset.txt", sep="\t")
+true_classes =  as.integer(na.omit(seeds[,8]))
+X = na.omit(seeds[,1:7])
+seeds_BIC = mixmodCluster(X, criterion="BIC", nbCluster=1:8)
+seeds_ICL = mixmodCluster(X, criterion="ICL", nbCluster=1:8)
+
+```
+On a choisi de chercher le nombre de classes entre $1$ et $8$, voici les résultats du clustering par critère du BIC puis par celui du ICL:
+```{r, echo=TRUE}
+seeds_BIC["bestResult"]["nbCluster"]
+seeds_BIC["bestResult"]["model"]
+```
+```{r, echo=TRUE}
+seeds_ICL["bestResult"]["nbCluster"]
+seeds_ICL["bestResult"]["model"]
+```
+```{r, echo=FALSE}
+plot(seeds_BIC, 5:6)
+plot(seeds_ICL, 5:6)
+```
+
+Le vrai nombre de classes est $5$, le critère ICL est donc plus proche de la vérité que le BIC, bien que les deux aient choisi le même modèle.
+On a choisi de représenter les graphiques pour les classes $5$ et $6$ afin de voir la différence entre les clustering par les deux critères. On remarque la forme ellipsoidale des isodensités car les matrices de covariances ne sont pas supposées diagonales ici.    
+c) On fixe cette fois la forme du modèle, et on étudie la sortie du nombre de classes du clustering.  
+
+- pour le modèle [pk_L_I]:  
+
+```{r, echo=FALSE, }
+model = mixmodGaussianModel(listModels = "Gaussian_pk_L_I")
+seeds_BIC = mixmodCluster(X, criterion="BIC", nbCluster=1:8, models=model)
+seeds_ICL = mixmodCluster(X, criterion="ICL", nbCluster=1:8, models=model)
+```
+On représente les histogrammes des marginales de l'échantillon.
+```{r, echo=TRUE, out.width="100%"}
+seeds_BIC["bestResult"]["nbCluster"]
+seeds_ICL["bestResult"]["nbCluster"]
+hist(seeds_BIC)
+hist(seeds_ICL)
+```
+
+La qualité du clustering a fortement chuté, on a beaucoup de composantes superflues (3 de trop), l'absence de covariance supposée entre les composantes fait que celles-ci ne capturent pas l'intéraction entre les marginales de l'échantillon.
+
+- pour le modèle [pk_Lk_C]:
+```{r, echo=FALSE}
+model = mixmodGaussianModel(listModels = "Gaussian_pk_Lk_C")
+seeds_BIC = mixmodCluster(X, criterion="BIC", nbCluster=1:8, models=model)
+seeds_ICL = mixmodCluster(X, criterion="ICL", nbCluster=1:8, models=model)
+```
+```{r, echo=TRUE, out.width="100%"}
+seeds_BIC["bestResult"]["nbCluster"]
+seeds_ICL["bestResult"]["nbCluster"]
+hist(seeds_BIC)
+hist(seeds_ICL)
+```
+
+Le fait d'avoir permis une plus grande généralité à la matrice de covariance a permis d'améliorer considérablement le clustering. Toutes les composantes sont pertinentes au vu des histogrammes.
